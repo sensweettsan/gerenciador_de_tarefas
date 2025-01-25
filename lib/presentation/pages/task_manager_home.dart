@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gerenciador_de_tarefas/models/taks_model.dart';
 import 'package:gerenciador_de_tarefas/presentation/pages/task_item_widget.dart';
-
 import '../../core/task_database.dart';
 
 class TaskManagerHome extends StatefulWidget {
@@ -19,23 +18,88 @@ class _TaskManagerHomeState extends State<TaskManagerHome> {
   }
 
   void refreshTasks() {
-    tasksFuture = TaskDatabase.instance.readAllTasks();
+    setState(() {
+      tasksFuture = TaskDatabase.instance.readAllTasks();
+    });
   }
 
-  Future<void> addTask(String title) async {
-    await TaskDatabase.instance.create(Task(title: title));
+  Future<void> addTask(String title, DateTime? deadline) async {
+    await TaskDatabase.instance.create(Task(title: title, deadline: deadline));
     refreshTasks();
   }
 
-  Future<void> editTask(Task task, String newTitle, String newStatus) async {
-    await TaskDatabase.instance
-        .update(Task(id: task.id, title: newTitle, status: newStatus));
+  Future<void> editTask(Task task, String newTitle, String newStatus,
+      DateTime? newDeadline) async {
+    await TaskDatabase.instance.update(Task(
+        id: task.id,
+        title: newTitle,
+        status: newStatus,
+        deadline: newDeadline));
     refreshTasks();
   }
 
   Future<void> deleteTask(int id) async {
     await TaskDatabase.instance.delete(id);
     refreshTasks();
+  }
+
+  void showAddTaskDialog() {
+    final TextEditingController taskController = TextEditingController();
+    DateTime? selectedDate;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Adicionar Nova Tarefa'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: taskController,
+                decoration: InputDecoration(hintText: 'Título da tarefa'),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2101),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      selectedDate = picked;
+                    });
+                  }
+                },
+                child: Text(selectedDate == null
+                    ? 'Selecionar Data de Conclusão'
+                    : DateFormat('dd/MM/yyyy').format(selectedDate!)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (taskController.text.isNotEmpty) {
+                  addTask(taskController.text, selectedDate);
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text('Adicionar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -46,10 +110,8 @@ class _TaskManagerHomeState extends State<TaskManagerHome> {
         actions: [
           IconButton(
             icon: Icon(Icons.add),
-            onPressed: () {
-              // Adicionar lógica de cadastrar tarefa
-            },
-          )
+            onPressed: showAddTaskDialog,
+          ),
         ],
       ),
       body: FutureBuilder<List<Task>>(
@@ -71,8 +133,11 @@ class _TaskManagerHomeState extends State<TaskManagerHome> {
               final task = tasks[index];
               return TaskItem(
                 task: task,
-                onChanged: () => editTask(task, task.title,
-                    task.status == 'Concluído' ? 'Pendente' : 'Concluído'),
+                onChanged: () => editTask(
+                    task,
+                    task.title,
+                    task.status == 'Concluído' ? 'Pendente' : 'Concluído',
+                    task.deadline),
               );
             },
           );
