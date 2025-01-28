@@ -1,6 +1,6 @@
 import 'package:gerenciador_de_tarefas/models/taks_model.dart';
-import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 class TaskDatabase {
   static final TaskDatabase instance = TaskDatabase._init();
