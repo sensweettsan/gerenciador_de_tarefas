@@ -6,8 +6,6 @@ import 'package:intl/intl.dart';
 import '../../core/task_database.dart';
 
 class TaskManagerHome extends StatefulWidget {
-  const TaskManagerHome({super.key});
-
   @override
   _TaskManagerHomeState createState() => _TaskManagerHomeState();
 }
